@@ -11,7 +11,7 @@ USE WAREHOUSE ADF_SI_WH;
 -- ============================================================================
 -- Procedure 1: Payment Volume Forecast Wrapper
 -- ============================================================================
-DROP FUNCTION IF EXISTS PREDICT_PAYMENT_VOLUME(VARIANT);
+DROP PROCEDURE IF EXISTS PREDICT_PAYMENT_VOLUME(VARIANT);
 
 CREATE OR REPLACE PROCEDURE PREDICT_PAYMENT_VOLUME(
     INPUT_DATA VARIANT
@@ -78,7 +78,7 @@ $$;
 -- ============================================================================
 -- Procedure 2: Borrower Churn / Default Risk Wrapper
 -- ============================================================================
-DROP FUNCTION IF EXISTS PREDICT_BORROWER_RISK(VARIANT);
+DROP PROCEDURE IF EXISTS PREDICT_BORROWER_RISK(VARIANT);
 
 CREATE OR REPLACE PROCEDURE PREDICT_BORROWER_RISK(
     INPUT_DATA VARIANT
@@ -119,21 +119,25 @@ def predict_risk(session, input_data):
     query = f"""
     SELECT
         c.customer_id,
+        c.risk_segment AS borrower_segment,
+        c.employment_status,
+        c.annual_income::FLOAT AS annual_income,
         c.credit_score::FLOAT AS credit_score,
-        c.annual_income::FLOAT AS income,
-        COUNT(DISTINCT l.loan_id) AS active_loans,
+        COUNT(DISTINCT l.loan_id)::FLOAT AS total_loans,
         SUM(l.outstanding_principal)::FLOAT AS outstanding_principal,
-        COUNT_IF(l.servicing_status = 'DELINQUENT') AS delinquent_loans,
-        AVG(ph.amount)::FLOAT AS avg_payment_amount
+        COUNT_IF(l.servicing_status = 'DELINQUENT')::FLOAT AS delinquent_loans,
+        AVG(ph.amount)::FLOAT AS avg_payment_amount,
+        COUNT_IF(ph.nsf_flag)::FLOAT AS nsf_events,
+        (COUNT_IF(l.servicing_status = 'DELINQUENT') > 0)::BOOLEAN AS is_delinquent
     FROM RAW.CUSTOMERS c
     LEFT JOIN RAW.LOAN_ACCOUNTS l ON c.customer_id = l.customer_id
     LEFT JOIN RAW.PAYMENT_HISTORY ph ON l.loan_id = ph.loan_id
     WHERE 1=1 {segment_clause}
-    GROUP BY c.customer_id, c.credit_score, c.annual_income
-    LIMIT 200
+    GROUP BY 1,2,3,4,5
+    LIMIT 500
     """
 
-    input_df = session.sql(query)
+    input_df = session.sql(query).drop("CUSTOMER_ID")
 
     preds = model.run(input_df, function_name="predict")
     pdf = preds.to_pandas()
@@ -147,7 +151,7 @@ $$;
 -- ============================================================================
 -- Procedure 3: Collections Outcome Prediction Wrapper
 -- ============================================================================
-DROP FUNCTION IF EXISTS PREDICT_COLLECTION_SUCCESS(VARIANT);
+DROP PROCEDURE IF EXISTS PREDICT_COLLECTION_SUCCESS(VARIANT);
 
 CREATE OR REPLACE PROCEDURE PREDICT_COLLECTION_SUCCESS(
     INPUT_DATA VARIANT
@@ -187,22 +191,24 @@ def predict_collections(session, input_data):
 
     query = f"""
     SELECT
-        loans.loan_id,
+        ce.collection_id,
+        ce.event_type,
+        ce.severity,
+        ce.outcome,
+        COALESCE(ce.promise_amount, 0)::FLOAT AS promise_amount,
+        DATEDIFF('day', ce.event_timestamp::DATE, CURRENT_DATE()) AS event_age_days,
         loans.delinquency_bucket,
-        loans.outstanding_principal::FLOAT AS outstanding_principal,
         loans.servicing_status,
-        COUNT(DISTINCT payments.payment_id) AS payment_count,
-        AVG(payments.amount)::FLOAT AS avg_payment,
-        COUNT_IF(collections.promise_to_pay_date IS NOT NULL) AS historical_ptp
-    FROM RAW.LOAN_ACCOUNTS loans
-    LEFT JOIN RAW.PAYMENT_HISTORY payments ON loans.loan_id = payments.loan_id
-    LEFT JOIN RAW.COLLECTION_EVENTS collections ON loans.loan_id = collections.loan_id
-    WHERE loans.servicing_status <> 'CHARGED_OFF' {bucket_clause}
-    GROUP BY loans.loan_id, loans.delinquency_bucket, loans.outstanding_principal, loans.servicing_status
-    LIMIT 200
+        loans.outstanding_principal::FLOAT AS outstanding_principal,
+        (ce.promise_to_pay_date IS NOT NULL OR ce.outcome = 'PROMISE_TO_PAY')::BOOLEAN AS ptp_success
+    FROM RAW.COLLECTION_EVENTS ce
+    JOIN RAW.LOAN_ACCOUNTS loans ON ce.loan_id = loans.loan_id
+    WHERE ce.event_timestamp >= DATEADD('month', -18, CURRENT_TIMESTAMP())
+      {bucket_clause}
+    LIMIT 500
     """
 
-    input_df = session.sql(query)
+    input_df = session.sql(query).drop("COLLECTION_ID")
 
     preds = model.run(input_df, function_name="predict")
     pdf = preds.to_pandas()
