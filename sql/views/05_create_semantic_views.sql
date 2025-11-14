@@ -15,23 +15,23 @@ CREATE OR REPLACE SEMANTIC VIEW SV_BORROWER_LOAN_INTELLIGENCE
   TABLES (
     customers AS RAW.CUSTOMERS
       PRIMARY KEY (customer_id)
-      WITH SYNONYMS ('borrowers','applicants','customer accounts')
+      WITH SYNONYMS = ('borrowers','applicants','customer accounts')
       COMMENT = 'Borrowers applying for and holding loans',
     loan_apps AS RAW.LOAN_APPLICATIONS
       PRIMARY KEY (application_id)
-      WITH SYNONYMS ('loan applications','credit requests')
+      WITH SYNONYMS = ('loan applications','credit requests')
       COMMENT = 'Loan application submissions',
     loans AS RAW.LOAN_ACCOUNTS
       PRIMARY KEY (loan_id)
-      WITH SYNONYMS ('loan accounts','funded loans')
+      WITH SYNONYMS = ('loan accounts','funded loans')
       COMMENT = 'Funded loan accounts with servicing data',
     payments AS RAW.PAYMENT_HISTORY
       PRIMARY KEY (payment_id)
-      WITH SYNONYMS ('loan payments','servicing cashflows')
+      WITH SYNONYMS = ('loan payments','servicing cashflows')
       COMMENT = 'Historical payment records',
     collections AS RAW.COLLECTION_EVENTS
       PRIMARY KEY (collection_id)
-      WITH SYNONYMS ('collection events','loss mitigation actions')
+      WITH SYNONYMS = ('collection events','loss mitigation actions')
       COMMENT = 'Collections and loss mitigation contacts'
   )
   RELATIONSHIPS (
@@ -45,85 +45,85 @@ CREATE OR REPLACE SEMANTIC VIEW SV_BORROWER_LOAN_INTELLIGENCE
   )
   DIMENSIONS (
     customers.first_name AS borrower_first_name
-      WITH SYNONYMS ('customer first name','applicant first name')
+      WITH SYNONYMS = ('customer first name','applicant first name')
       COMMENT = 'Borrower given name',
     customers.last_name AS borrower_last_name
-      WITH SYNONYMS ('customer last name','applicant surname')
+      WITH SYNONYMS = ('customer last name','applicant surname')
       COMMENT = 'Borrower family name',
     customers.state AS borrower_state
-      WITH SYNONYMS ('borrower state','customer state')
+      WITH SYNONYMS = ('borrower state','customer state')
       COMMENT = 'State of residence',
     customers.risk_segment AS borrower_risk_segment
-      WITH SYNONYMS ('risk tier','credit risk segment')
+      WITH SYNONYMS = ('risk tier','credit risk segment')
       COMMENT = 'Risk segment based on credit score',
     customers.onboarding_channel AS onboarding_channel
       COMMENT = 'Acquisition channel used during onboarding',
     loan_apps.product_type AS application_product_type
-      WITH SYNONYMS ('application product type','requested product')
+      WITH SYNONYMS = ('application product type','requested product')
       COMMENT = 'Product requested in the application',
     loan_apps.status AS application_status
-      WITH SYNONYMS ('app status','decision status')
+      WITH SYNONYMS = ('app status','decision status')
       COMMENT = 'Application status (APPROVED, DECLINED, etc.)',
     loans.product_type AS loan_product_type
-      WITH SYNONYMS ('loan product','funded product type')
+      WITH SYNONYMS = ('loan product','funded product type')
       COMMENT = 'Product type for the funded loan',
     loans.servicing_status AS servicing_status
-      WITH SYNONYMS ('loan servicing status','portfolio status')
+      WITH SYNONYMS = ('loan servicing status','portfolio status')
       COMMENT = 'Overall servicing status (CURRENT, DELINQUENT, etc.)',
     loans.delinquency_bucket AS delinquency_bucket
-      WITH SYNONYMS ('dpd bucket','late bucket')
+      WITH SYNONYMS = ('dpd bucket','late bucket')
       COMMENT = 'Delinquency bucket (30/60/90+) if applicable',
     loans.auto_pay_enabled AS autopay_flag
-      WITH SYNONYMS ('auto debit enabled','auto pay flag')
+      WITH SYNONYMS = ('auto debit enabled','auto pay flag')
       COMMENT = 'Indicates whether borrower enrolled in auto-pay',
     payments.payment_method AS payment_method
-      WITH SYNONYMS ('payment tender','remittance method')
+      WITH SYNONYMS = ('payment tender','remittance method')
       COMMENT = 'Payment method used (ACH, card, etc.)',
     payments.payment_channel AS payment_channel
-      WITH SYNONYMS ('payment channel','payment source channel')
+      WITH SYNONYMS = ('payment channel','payment source channel')
       COMMENT = 'Channel the payment came through',
     collections.event_type AS collection_event_type
-      WITH SYNONYMS ('collections contact type','loss-mit contact type')
+      WITH SYNONYMS = ('collections contact type','loss-mit contact type')
       COMMENT = 'Type of collection interaction',
     collections.severity AS collection_severity
-      WITH SYNONYMS ('collections severity','loss-mit priority')
+      WITH SYNONYMS = ('collections severity','loss-mit priority')
       COMMENT = 'Severity of the collection event'
   )
   METRICS (
     customers.total_borrowers AS COUNT(DISTINCT customer_id)
-      WITH SYNONYMS ('borrower count','customer count')
+      WITH SYNONYMS = ('borrower count','customer count')
       COMMENT = 'Total distinct borrowers',
     loan_apps.total_applications AS COUNT(DISTINCT application_id)
       COMMENT = 'Total loan applications submitted',
-    loan_apps.approval_rate AS (COUNT_IF(status = ''APPROVED'')::FLOAT / NULLIF(COUNT(*),0))
-      WITH SYNONYMS ('approval rate','app conversion rate')
+    loan_apps.approval_rate AS (COUNT_IF(status = 'APPROVED')::FLOAT / NULLIF(COUNT(*),0))
+      WITH SYNONYMS = ('approval rate','app conversion rate')
       COMMENT = 'Ratio of approved applications',
     loans.total_funded_loans AS COUNT(DISTINCT loan_id)
-      WITH SYNONYMS ('funded loans','loan portfolio count')
+      WITH SYNONYMS = ('funded loans','loan portfolio count')
       COMMENT = 'Number of funded loan accounts',
     loans.total_original_principal AS SUM(original_amount)
-      WITH SYNONYMS ('original principal sum','funded principal')
+      WITH SYNONYMS = ('original principal sum','funded principal')
       COMMENT = 'Sum of original principal funded',
     loans.total_outstanding_principal AS SUM(outstanding_principal)
-      WITH SYNONYMS ('outstanding balance','principal outstanding')
+      WITH SYNONYMS = ('outstanding balance','principal outstanding')
       COMMENT = 'Current principal outstanding across loans',
-    loans.delinquent_loans AS COUNT_IF(servicing_status = ''DELINQUENT'')
-      WITH SYNONYMS ('delinquent loan count','dpd count')
+    loans.delinquent_loans AS COUNT_IF(servicing_status = 'DELINQUENT')
+      WITH SYNONYMS = ('delinquent loan count','dpd count')
       COMMENT = 'Number of loans currently delinquent',
     payments.total_payments AS COUNT(DISTINCT payment_id)
-      WITH SYNONYMS ('payment count','servicing payment count')
+      WITH SYNONYMS = ('payment count','servicing payment count')
       COMMENT = 'Number of payments posted',
     payments.total_payment_amount AS SUM(amount)
-      WITH SYNONYMS ('payments collected','cash collected')
+      WITH SYNONYMS = ('payments collected','cash collected')
       COMMENT = 'Total payment dollars collected',
     payments.avg_payment_amount AS AVG(amount)
-      WITH SYNONYMS ('avg payment amt','mean remittance')
+      WITH SYNONYMS = ('avg payment amt','mean remittance')
       COMMENT = 'Average payment size',
     collections.total_collection_events AS COUNT(DISTINCT collection_id)
-      WITH SYNONYMS ('collections count','loss-mit events')
+      WITH SYNONYMS = ('collections count','loss-mit events')
       COMMENT = 'Number of collection interactions',
     collections.promise_to_pay_rate AS (COUNT_IF(promise_to_pay_date IS NOT NULL)::FLOAT / NULLIF(COUNT(*),0))
-      WITH SYNONYMS ('promise to pay rate','ptp rate')
+      WITH SYNONYMS = ('promise to pay rate','ptp rate')
       COMMENT = 'Share of events resulting in a promise to pay'
   )
   COMMENT = 'Semantic view for borrower lifecycle and loan performance across onboarding, funding, payments, and collections';
@@ -135,7 +135,7 @@ CREATE OR REPLACE SEMANTIC VIEW SV_SERVICING_COLLECTIONS_INTELLIGENCE
   TABLES (
     loans AS RAW.LOAN_ACCOUNTS
       PRIMARY KEY (loan_id)
-      WITH SYNONYMS ('serviced loans','portfolio loans')
+      WITH SYNONYMS = ('serviced loans','portfolio loans')
       COMMENT = 'Loan accounts under servicing',
     payments AS RAW.PAYMENT_HISTORY
       PRIMARY KEY (payment_id)
@@ -175,7 +175,7 @@ CREATE OR REPLACE SEMANTIC VIEW SV_SERVICING_COLLECTIONS_INTELLIGENCE
       COMMENT = 'Total loans monitored',
     loans.total_outstanding AS SUM(outstanding_principal)
       COMMENT = 'Outstanding principal sum',
-    loans.delinquent_balance AS SUM(CASE WHEN servicing_status = ''DELINQUENT'' THEN outstanding_principal ELSE 0 END)
+    loans.delinquent_balance AS SUM(CASE WHEN servicing_status = 'DELINQUENT' THEN outstanding_principal ELSE 0 END)
       COMMENT = 'Outstanding principal on delinquent loans',
     payments.total_payments AS COUNT(DISTINCT payment_id)
       COMMENT = 'Total number of payments posted',
@@ -185,11 +185,11 @@ CREATE OR REPLACE SEMANTIC VIEW SV_SERVICING_COLLECTIONS_INTELLIGENCE
       COMMENT = 'Share of payments assessed late fees',
     collections.collection_touchpoints AS COUNT(DISTINCT collection_id)
       COMMENT = 'Number of collection contacts',
-    collections.ptp_conversion AS (COUNT_IF(outcome = ''PROMISE_TO_PAY'')::FLOAT / NULLIF(COUNT(*),0))
+    collections.ptp_conversion AS (COUNT_IF(outcome = 'PROMISE_TO_PAY')::FLOAT / NULLIF(COUNT(*),0))
       COMMENT = 'Promise-to-pay conversion rate',
     incidents.total_incidents AS COUNT(DISTINCT incident_report_id)
       COMMENT = 'Number of incidents recorded',
-    incidents.open_incidents AS COUNT_IF(status <> ''CLOSED'')
+    incidents.open_incidents AS COUNT_IF(status <> 'CLOSED')
       COMMENT = 'Open incident count'
   )
   COMMENT = 'Semantic view focused on servicing health, collections effectiveness, and incident tracking';
@@ -250,7 +250,7 @@ CREATE OR REPLACE SEMANTIC VIEW SV_CUSTOMER_SUPPORT_INTELLIGENCE
       COMMENT = 'Average sentiment score from interactions',
     transcripts.total_transcripts AS COUNT(DISTINCT transcript_id)
       COMMENT = 'Number of transcripts ingested',
-    transcripts.resolution_rate AS (COUNT_IF(resolution_status = ''RESOLVED'')::FLOAT / NULLIF(COUNT(*),0))
+    transcripts.resolution_rate AS (COUNT_IF(resolution_status = 'RESOLVED')::FLOAT / NULLIF(COUNT(*),0))
       COMMENT = 'Share of transcripts marked resolved',
     incidents.total_support_incidents AS COUNT(DISTINCT incident_report_id)
       COMMENT = 'Support-originated incident volume'
