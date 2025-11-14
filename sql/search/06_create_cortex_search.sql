@@ -108,8 +108,22 @@ AS
 -- ============================================================================
 -- Step 6: Status Summary
 -- ============================================================================
+SHOW TABLES LIKE 'SUPPORT_TRANSCRIPTS' IN SCHEMA RAW;
 SELECT
-    'ADF Cortex Search services created successfully' AS status,
-    (SELECT CHANGE_TRACKING FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SUPPORT_TRANSCRIPTS') AS transcripts_tracking,
-    (SELECT CHANGE_TRACKING FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'POLICY_DOCUMENTS') AS policies_tracking,
-    (SELECT CHANGE_TRACKING FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'INCIDENT_REPORTS') AS incidents_tracking;
+    "name" AS table_name,
+    "change_tracking" AS change_tracking
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+SHOW TABLES LIKE 'POLICY_DOCUMENTS' IN SCHEMA RAW;
+SELECT
+    "name" AS table_name,
+    "change_tracking" AS change_tracking
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+SHOW TABLES LIKE 'INCIDENT_REPORTS' IN SCHEMA RAW;
+SELECT
+    "name" AS table_name,
+    "change_tracking" AS change_tracking
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+SELECT 'ADF Cortex Search services created successfully' AS status;
