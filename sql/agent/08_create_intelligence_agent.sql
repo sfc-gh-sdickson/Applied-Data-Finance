@@ -44,7 +44,7 @@ CREATE OR REPLACE AGENT ADF_INTELLIGENCE_AGENT
   FROM SPECIFICATION
   $$
 models:
-  orchestration: claude-4-sonnet
+  orchestration: auto
 
 orchestration:
   budget:
