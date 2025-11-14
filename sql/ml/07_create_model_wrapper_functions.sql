@@ -11,10 +11,10 @@ USE WAREHOUSE ADF_SI_WH;
 -- ============================================================================
 -- Procedure 1: Payment Volume Forecast Wrapper
 -- ============================================================================
-DROP PROCEDURE IF EXISTS PREDICT_PAYMENT_VOLUME(VARIANT);
+DROP PROCEDURE IF EXISTS PREDICT_PAYMENT_VOLUME(INT);
 
 CREATE OR REPLACE PROCEDURE PREDICT_PAYMENT_VOLUME(
-    INPUT_DATA VARIANT
+    MONTHS_AHEAD INT
 )
 RETURNS STRING
 LANGUAGE PYTHON
@@ -24,64 +24,67 @@ HANDLER = 'predict_payments'
 COMMENT = 'Invokes PAYMENT_VOLUME_FORECASTER model to project future payment cash flows'
 AS
 $$
-def predict_payments(session, input_data):
-    from snowflake.ml.registry import Registry
-    import json
+import json
+from datetime import date
+from dateutil.relativedelta import relativedelta
+import pandas as pd
+from snowflake.ml.registry import Registry
 
-    payload = {}
-    months_ahead = 6
-
-    if input_data is not None:
-        if isinstance(input_data, dict):
-            payload = input_data
-        else:
-            try:
-                payload = json.loads(str(input_data))
-            except Exception:
-                payload = {}
-
-    months_ahead = payload.get("months_ahead") or payload.get("monthsAhead") or months_ahead
-    try:
-        months_ahead = int(months_ahead)
-    except Exception:
-        months_ahead = 6
-
+def predict_payments(session, months_ahead: int):
     reg = Registry(session)
     model = reg.get_model("PAYMENT_VOLUME_FORECASTER").default
 
-    recent_query = f"""
+    # Query for the last available month of data to use as a baseline
+    base_query = """
     SELECT
         DATE_TRUNC('month', payment_date)::DATE AS payment_month,
-        MONTH(payment_date) AS month_num,
-        YEAR(payment_date) AS year_num,
         COUNT(DISTINCT loan_id)::FLOAT AS loan_count,
         AVG(amount)::FLOAT AS avg_payment_amount,
-        COUNT_IF(late_fee_applied)::FLOAT AS late_payment_count,
-        SUM(amount)::FLOAT AS total_payment_amount
+        COUNT_IF(late_fee_applied)::FLOAT AS late_payment_count
     FROM RAW.PAYMENT_HISTORY
-    WHERE payment_date >= DATEADD('month', -24, CURRENT_DATE())
-    GROUP BY 1,2,3
-    ORDER BY payment_month
+    ORDER BY payment_month DESC
+    LIMIT 1
     """
+    base_df = session.sql(base_query).to_pandas()
+    base_date = pd.to_datetime(base_df['PAYMENT_MONTH'].iloc[0])
+    
+    # Generate future dates and features for prediction
+    future_dates = [base_date + relativedelta(months=i) for i in range(1, months_ahead + 1)]
+    future_features_list = []
+    for dt in future_dates:
+        future_features_list.append({
+            "MONTH_NUM": dt.month,
+            "YEAR_NUM": dt.year,
+            "LOAN_COUNT": base_df['LOAN_COUNT'].iloc[0],
+            "AVG_PAYMENT_AMOUNT": base_df['AVG_PAYMENT_AMOUNT'].iloc[0],
+            "LATE_PAYMENT_COUNT": base_df['LATE_PAYMENT_COUNT'].iloc[0]
+        })
 
-    input_df = session.sql(recent_query).drop("PAYMENT_MONTH")
-
+    input_df = session.create_dataframe(pd.DataFrame(future_features_list))
+    
+    # Make predictions
     preds = model.run(input_df, function_name="predict")
-    pdf = preds.to_pandas()
+    
+    # Combine predictions with future dates for clarity
+    preds_pdf = preds.to_pandas()
+    results_df = pd.DataFrame({
+        "FORECAST_MONTH": [d.strftime('%Y-%m') for d in future_dates],
+        "PREDICTED_PAYMENT_AMOUNT": preds_pdf["PREDICTED_PAYMENT_AMOUNT"]
+    })
 
     return json.dumps({
         "months_ahead": months_ahead,
-        "prediction": pdf.to_dict(orient="records")
+        "prediction": results_df.to_dict(orient="records")
     })
 $$;
 
 -- ============================================================================
 -- Procedure 2: Borrower Churn / Default Risk Wrapper
 -- ============================================================================
-DROP PROCEDURE IF EXISTS PREDICT_BORROWER_RISK(VARIANT);
+DROP PROCEDURE IF EXISTS PREDICT_BORROWER_RISK(VARCHAR);
 
 CREATE OR REPLACE PROCEDURE PREDICT_BORROWER_RISK(
-    INPUT_DATA VARIANT
+    RISK_SEGMENT_FILTER VARCHAR
 )
 RETURNS STRING
 LANGUAGE PYTHON
@@ -91,30 +94,14 @@ HANDLER = 'predict_risk'
 COMMENT = 'Invokes BORROWER_RISK_MODEL to assess churn/delinquency risk by segment'
 AS
 $$
-def predict_risk(session, input_data):
+def predict_risk(session, risk_segment_filter):
     from snowflake.ml.registry import Registry
     import json
-
-    payload = {}
-    risk_segment_filter = None
-
-    if input_data is not None:
-        if isinstance(input_data, dict):
-            payload = input_data
-        else:
-            try:
-                payload = json.loads(str(input_data))
-            except Exception:
-                payload = {}
-
-    risk_segment_filter = payload.get("risk_segment") or payload.get("riskSegment")
-    if not risk_segment_filter and isinstance(input_data, str):
-        risk_segment_filter = input_data
 
     reg = Registry(session)
     model = reg.get_model("BORROWER_RISK_MODEL").default
 
-    segment_clause = f"AND c.risk_segment = '{risk_segment_filter}'" if risk_segment_filter else ""
+    segment_clause = f"AND c.risk_segment = '{risk_segment_filter}'" if risk_segment_filter and risk_segment_filter.upper() != 'ALL' else ""
 
     query = f"""
     SELECT
@@ -151,10 +138,10 @@ $$;
 -- ============================================================================
 -- Procedure 3: Collections Outcome Prediction Wrapper
 -- ============================================================================
-DROP PROCEDURE IF EXISTS PREDICT_COLLECTION_SUCCESS(VARIANT);
+DROP PROCEDURE IF EXISTS PREDICT_COLLECTION_SUCCESS(VARCHAR);
 
 CREATE OR REPLACE PROCEDURE PREDICT_COLLECTION_SUCCESS(
-    INPUT_DATA VARIANT
+    DELINQUENCY_BUCKET_FILTER VARCHAR
 )
 RETURNS STRING
 LANGUAGE PYTHON
@@ -164,30 +151,14 @@ HANDLER = 'predict_collections'
 COMMENT = 'Invokes COLLECTION_SUCCESS_MODEL to estimate promise-to-pay success probability'
 AS
 $$
-def predict_collections(session, input_data):
+def predict_collections(session, delinquency_bucket_filter):
     from snowflake.ml.registry import Registry
     import json
-
-    payload = {}
-    delinquency_bucket_filter = None
-
-    if input_data is not None:
-        if isinstance(input_data, dict):
-            payload = input_data
-        else:
-            try:
-                payload = json.loads(str(input_data))
-            except Exception:
-                payload = {}
-
-    delinquency_bucket_filter = payload.get("delinquency_bucket") or payload.get("delinquencyBucket")
-    if not delinquency_bucket_filter and isinstance(input_data, str):
-        delinquency_bucket_filter = input_data
 
     reg = Registry(session)
     model = reg.get_model("COLLECTION_SUCCESS_MODEL").default
 
-    bucket_clause = f"AND loans.delinquency_bucket = '{delinquency_bucket_filter}'" if delinquency_bucket_filter else ""
+    bucket_clause = f"AND loans.delinquency_bucket = '{delinquency_bucket_filter}'" if delinquency_bucket_filter and delinquency_bucket_filter.upper() != 'ALL' else ""
 
     query = f"""
     SELECT
