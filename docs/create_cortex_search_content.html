@@ -1,0 +1,173 @@
+
+
+
+  
+  <section id="create-cortex-search-service">
+<h1>CREATE CORTEX SEARCH SERVICE<a class="headerlink" href="#create-cortex-search-service" title="Link to this heading" data-nosnippet="">¶</a></h1>
+
+<p>Creates a new <a class="reference internal" href="../../user-guide/snowflake-cortex/cortex-search/cortex-search-overview"><span class="doc">Cortex Search service</span></a> or replaces an existing one.</p>
+<section id="syntax">
+<h2>Syntax<a class="headerlink" href="#syntax" title="Link to this heading" data-nosnippet="">¶</a></h2>
+<div class="relative group text-sm"><div class="highlight-sqlsyntax notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="nx">[</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="nx">]</span> <span class="k">CORTEX SEARCH SERVICE</span> <span class="nx">[</span> <span class="k">IF</span> <span class="k">NOT</span> <span class="k">EXISTS</span> <span class="nx">]</span> <span class="s1">&lt;name&gt;</span>
+  <span class="k">ON</span> <span class="s1">&lt;search_column&gt;</span>
+  <span class="k">ATTRIBUTES</span> <span class="s1">&lt;col_name&gt;</span> <span class="nx">[</span> <span class="nx">,</span> <span class="nx">...</span> <span class="nx">]</span>
+  <span class="k">WAREHOUSE</span> <span class="nx">=</span> <span class="s1">&lt;warehouse_name&gt;</span>
+  <span class="k">TARGET_LAG</span> <span class="nx">=</span> <span class="nc">'&lt;num&gt; { seconds | minutes | hours | days }'</span>
+  <span class="nx">[</span> <span class="k">EMBEDDING_MODEL</span> <span class="nx">=</span> <span class="s1">&lt;embedding_model_name&gt;</span> <span class="nx">]</span>
+  <span class="nx">[</span> <span class="k">INITIALIZE</span> <span class="nx">=</span> <span class="nx">{</span> <span class="k">ON_CREATE</span> <span class="nx">|</span> <span class="k">ON_SCHEDULE</span> <span class="nx">}</span> <span class="nx">]</span>
+  <span class="nx">[</span> <span class="k">COMMENT</span> <span class="nx">=</span> <span class="nc">'&lt;comment&gt;'</span> <span class="nx">]</span>
+  <span class="k">AS</span> <span class="s1">&lt;query&gt;</span><span class="nx">;</span>
+</pre></div>
+</div><div data-codeblock-index="0" class="copybutton"><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 384 512" class="copybutton-icon icon-copy"><path d="M192 0c-41.8 0-77.4 26.7-90.5 64H64C28.7 64 0 92.7 0 128V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H282.5C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 512 512" class="copybutton-icon icon-copied hidden"><path d="M470.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L192 338.7 425.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"></path></svg><span>Copy</span></div></div>
+</section>
+<section id="required-parameters">
+<h2>Required parameters<a class="headerlink" href="#required-parameters" title="Link to this heading" data-nosnippet="">¶</a></h2>
+<dl>
+<dt><code class="samp docutils literal notranslate"><em><span class="pre">name</span></em></code></dt><dd><p>String that specifies the identifier (i.e. name) for the Cortex Search service; must be unique for the schema in which the service is created.</p>
+<p>In addition, the identifier must start with an alphabetic character and cannot contain spaces or special characters unless the
+entire identifier string is enclosed in double quotes (for example, <code class="code docutils literal notranslate"><span class="pre">"My</span> <span class="pre">object"</span></code>). Identifiers enclosed in double quotes are also
+case-sensitive.</p>
+<p>For more information, see <a class="reference internal" href="../identifiers-syntax"><span class="doc">Identifier requirements</span></a>.</p>
+</dd>
+<dt><code class="samp docutils literal notranslate"><span class="pre">ON</span> <em><span class="pre">search_column</span></em></code></dt><dd><p>Specifies the text column in the base table that you wish to search on. This column must be a text value.</p>
+</dd>
+<dt><code class="samp docutils literal notranslate"><span class="pre">ATTRIBUTES</span> <em><span class="pre">col_name</span></em> <span class="pre">[</span> <span class="pre">,</span> <span class="pre">...</span> <span class="pre">]</span></code></dt><dd><p>Specifies comma-separated list of columns in the base table that you wish to filter on when issuing queries to the service.
+Attribute columns must be included in the source query, either via explicit enumeration or wildcard, ( <code class="docutils literal notranslate"><span class="pre">*</span></code> ).</p>
+</dd>
+<dt><code class="samp docutils literal notranslate"><span class="pre">WAREHOUSE</span> <span class="pre">=</span> <em><span class="pre">warehouse_name</span></em></code></dt><dd><p>Specifies the warehouse to use for running the source query, building the search index, and keeping it refreshed per the TARGET_LAG target.</p>
+</dd>
+<dt><code class="samp docutils literal notranslate"><span class="pre">TARGET_LAG</span> <span class="pre">=</span> <span class="pre">'</span><em><span class="pre">num</span></em> <span class="pre">{</span> <span class="pre">seconds</span> <span class="pre">|</span> <span class="pre">minutes</span> <span class="pre">|</span> <span class="pre">hours</span> <span class="pre">|</span> <span class="pre">days</span> <span class="pre">}'</span></code></dt><dd><p>Specifies the maximum amount of time that the Cortex Search service content should lag behind updates to the base tables specified in the source query.</p>
+</dd>
+</dl>
+</section>
+<section id="optional-parameters">
+<h2>Optional parameters<a class="headerlink" href="#optional-parameters" title="Link to this heading" data-nosnippet="">¶</a></h2>
+<dl>
+<dt><code class="samp docutils literal notranslate"><span class="pre">EMBEDDING_MODEL</span> <span class="pre">=</span> <span class="pre">&lt;embedding_model_name&gt;</span></code></dt><dd><p>Optional parameter that specifies the embedding model to use in the Cortex Search Service. This property cannot be altered after you create the Cortex
+Search Service. To modify the property, recreate the Cortex Search Service with a CREATE OR REPLACE CORTEX SEARCH SERVICE command.</p>
+<p>Some embedding models are only available in certain cloud regions for Cortex Search.
+For an availability list by model by region, see
+<a class="reference internal" href="../../user-guide/snowflake-cortex/cortex-search/cortex-search-overview.html#label-cortex-search-overview-regional-availability"><span class="std std-ref">Cortex Search Regional Availability</span></a>.</p>
+<p>Each model may incur a different cost per million input tokens processed.
+Refer to the <a class="reference external" href="https://www.snowflake.com/legal-files/CreditConsumptionTable.pdf">Snowflake Service Consumption Table</a> for each function’s cost in credits per million tokens.</p>
+<p>If the <code class="docutils literal notranslate"><span class="pre">EMBEDDING_MODEL</span></code> is not specified, the default model is used. The default model is <code class="docutils literal notranslate"><span class="pre">snowflake-arctic-embed-m-v1.5</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">INITIALIZE</span></code></dt><dd><p>Specifies the behavior of the initial <a class="reference internal" href="../../user-guide/snowflake-cortex/cortex-search/cortex-search-overview.html#label-cortex-search-refreshes"><span class="std std-ref">refresh</span></a> of the Cortex Search Service. This property cannot be
+altered after you create the service. To modify the property, replace the cortex search service with a CREATE OR REPLACE CORTEX SEARCH SERVICE command.</p>
+<blockquote>
+<div><dl>
+<dt><code class="code docutils literal notranslate"><span class="pre">ON_CREATE</span></code></dt><dd><p>Refreshes the Cortex Search Service synchronously at creation. If this refresh fails, service creation fails and displays an error message.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">ON_SCHEDULE</span></code></dt><dd><p>Refreshes the Cortex Search Service at the next scheduled refresh.</p>
+<p>The Cortex Search Service is populated when the refresh schedule process runs. No data is populated when the Cortex Search Service is created.
+If you try to query the service, you might see the following error because the first scheduled refresh has not yet occurred.</p>
+<div class="highlight-output notranslate"><div class="highlight"><pre><span></span><span class="go">Your service has not yet been loaded into our serving system. Please retry your request in a few minutes.</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>Default: <code class="code docutils literal notranslate"><span class="pre">ON_CREATE</span></code></p>
+</div></blockquote>
+</dd>
+<dt><code class="samp docutils literal notranslate"><span class="pre">COMMENT</span> <span class="pre">=</span> <span class="pre">'</span><em><span class="pre">comment</span></em><span class="pre">'</span></code></dt><dd><p>Specifies a comment for the service.</p>
+</dd>
+<dt><code class="samp docutils literal notranslate"><span class="pre">AS</span> <em><span class="pre">query</span></em></code></dt><dd><p>Specifies a query defining the base table from which the service is created.</p>
+</dd>
+</dl>
+</section>
+<section id="access-control-requirements">
+<h2>Access Control Requirements<a class="headerlink" href="#access-control-requirements" title="Link to this heading" data-nosnippet="">¶</a></h2>
+<p>A <a class="reference internal" href="../../user-guide/security-access-control-overview.html#label-access-control-overview-roles"><span class="std std-ref">role</span></a> used to execute this operation must have the following
+<a class="reference internal" href="../../user-guide/security-access-control-overview.html#label-access-control-overview-privileges"><span class="std std-ref">privileges</span></a> at a minimum:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Privilege</p></th>
+<th class="head"><p>Object</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>CREATE CORTEX SEARCH SERVICE</p></td>
+<td><p>Schema in which you are creating the search service.</p></td>
+</tr>
+<tr class="row-odd"><td><p>SELECT</p></td>
+<td><p>Tables and views that the service queries.</p></td>
+</tr>
+<tr class="row-even"><td><p>USAGE</p></td>
+<td><p>Warehouse that refreshes the service.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The USAGE privilege on the parent database and schema are required to perform operations on any object in a schema. Note that a role granted any privilege on a schema allows that role to resolve the schema. For example, a role granted CREATE privilege on a schema can create objects on that schema without <em>also</em> having USAGE granted on that schema.</p>
+<p>For instructions on creating a custom role with a specified set of privileges, see <a class="reference internal" href="../../user-guide/security-access-control-configure.html#label-security-custom-role"><span class="std std-ref">Creating custom roles</span></a>.</p>
+<p>For general information about roles and privilege grants for performing SQL actions on
+<a class="reference internal" href="../../user-guide/security-access-control-overview.html#label-access-control-securable-objects"><span class="std std-ref">securable objects</span></a>, see <a class="reference internal" href="../../user-guide/security-access-control-overview"><span class="doc">Overview of Access Control</span></a>.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>To create a Cortex Search Service, your role must have the required privileges to use the Cortex embedding functions.
+This requires granting the <a class="reference internal" href="../snowflake-db-roles.html#label-snowflake-db-roles-cortex-user"><span class="std std-ref">SNOWFLAKE.CORTEX_USER</span></a> database role
+or the <a class="reference internal" href="../snowflake-db-roles.html#label-snowflake-db-roles-cortex-embed-user"><span class="std std-ref">SNOWFLAKE.CORTEX_EMBED_USER</span></a> database
+role to the service creator role.</p>
+</div>
+</section>
+<section id="usage-notes">
+<h2>Usage Notes<a class="headerlink" href="#usage-notes" title="Link to this heading" data-nosnippet="">¶</a></h2>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>Customers should ensure that no personal data (other than for a User object), sensitive data, export-controlled data, or other regulated data is entered as metadata when using the Snowflake service. For more information, see <a class="reference internal" href="../metadata"><span class="doc">Metadata fields in Snowflake</span></a>.</p>
+</div>
+<ul class="simple">
+<li><p>The size of the Warehouse used to run the Cortex Search service source query does impact the speed and cost of each refresh. A
+larger warehouse decreases build and refresh time. However, during this preview, Snowflake recommends using a warehouse size no larger
+than MEDIUM for Cortex Search services.</p></li>
+<li><p>Snowflake recommends using a dedicated warehouse for each Cortex Search service so as to not interfere with other workloads.</p></li>
+<li><p>The search index is built as part of the create statement, which means the CREATE CORTEX SEARCH SERVICE statement may take longer to
+complete for larger datasets.</p></li>
+</ul>
+</section>
+<section id="change-tracking-requirements">
+<span id="label-cortex-search-change-tracking-requirements"></span><h2>Change Tracking Requirements<a class="headerlink" href="#change-tracking-requirements" title="Link to this heading" data-nosnippet="">¶</a></h2>
+<p>When creating a Cortex Search Service, if change tracking is not already enabled on the tables that it queries, Snowflake
+automatically attempts to enable change tracking on them. In order to support incremental refreshes, change tracking must be enabled with
+<a class="reference internal" href="../parameters.html#label-data-retention-time-in-days"><span class="std std-ref">non-zero time travel retention</span></a> on all underlying objects used by a Cortex Search Service.</p>
+<p>As base objects change, so does the Cortex Search Service. If you recreate a base object, you must re-enable change tracking.</p>
+<p>For more information about enabling change tracking, see <a class="reference internal" href="../../user-guide/dynamic-tables-create.html#label-dynamic-tables-and-change-tracking"><span class="std std-ref">Enable change tracking</span></a>.</p>
+<ul class="simple">
+<li><p>The OR REPLACE and IF NOT EXISTS clauses are mutually exclusive. They can’t both be used in the same statement.</p></li>
+<li><p>CREATE OR REPLACE <em>&lt;object&gt;</em> statements are atomic. That is, when an object is replaced, the old object is deleted and the new object is created in a single transaction.</p></li>
+</ul>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading" data-nosnippet="">¶</a></h2>
+<p>Create a Cortex Search service named <code class="docutils literal notranslate"><span class="pre">mysvc</span></code>
+using the <code class="docutils literal notranslate"><span class="pre">snowflake-arctic-embed-l-v2.0</span></code> embedding model:</p>
+<div class="relative group text-sm"><div class="highlight-sqlsyntax notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">CORTEX SEARCH SERVICE</span> <span class="n">mysvc</span>
+  <span class="k">ON</span> <span class="n">transcript_text</span>
+  <span class="k">ATTRIBUTES</span> <span class="n">region</span><span class="nx">,</span><span class="n">agent_id</span>
+  <span class="k">WAREHOUSE</span> <span class="nx">=</span> <span class="n">mywh</span>
+  <span class="k">TARGET_LAG</span> <span class="nx">=</span> <span class="nc">'1 hour'</span>
+  <span class="k">EMBEDDING_MODEL</span> <span class="nx">=</span> <span class="nc">'snowflake-arctic-embed-l-v2.0'</span>
+<span class="k">AS</span> <span class="nx">(</span>
+  <span class="k">SELECT</span>
+      <span class="n">transcript_text</span><span class="nx">,</span>
+      <span class="n">date</span><span class="nx">,</span>
+      <span class="n">region</span><span class="nx">,</span>
+      <span class="n">agent_id</span>
+  <span class="k">FROM</span> <span class="n">support_db</span><span class="nx">.</span><span class="n">public</span><span class="nx">.</span><span class="n">transcripts_etl</span>
+<span class="nx">);</span>
+</pre></div>
+</div><div data-codeblock-index="1" class="copybutton"><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 384 512" class="copybutton-icon icon-copy"><path d="M192 0c-41.8 0-77.4 26.7-90.5 64H64C28.7 64 0 92.7 0 128V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H282.5C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 512 512" class="copybutton-icon icon-copied hidden"><path d="M470.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L192 338.7 425.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"></path></svg><span>Copy</span></div></div>
+<p>Create a Cortex Search service named <code class="docutils literal notranslate"><span class="pre">mysvc</span></code>, with the first refresh
+scheduled to run after one <code class="docutils literal notranslate"><span class="pre">TARGET_LAG</span></code> period (1 hour) has passed.</p>
+<div class="relative group text-sm"><div class="highlight-sqlsyntax notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">CORTEX SEARCH SERVICE</span> <span class="n">mysvc</span>
+  <span class="k">ON</span> <span class="n">transcript_text</span>
+  <span class="k">ATTRIBUTES</span> <span class="n">region</span>
+  <span class="k">WAREHOUSE</span> <span class="nx">=</span> <span class="n">mywh</span>
+  <span class="k">TARGET_LAG</span> <span class="nx">=</span> <span class="nc">'1 hour'</span>
+  <span class="k">INITIALIZE</span> <span class="nx">=</span> <span class="k">ON_SCHEDULE</span>
+<span class="k">AS</span> <span class="k">SELECT</span> <span class="nx">*</span> <span class="k">FROM</span> <span class="n">support_db</span><span class="nx">.</span><span class="n">public</span><span class="nx">.</span><span class="n">transcripts_etl</span><span class="nx">;</span>
+</pre></div>
+</div><div data-codeblock-index="2" class="copybutton"><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 384 512" class="copybutton-icon icon-copy"><path d="M192 0c-41.8 0-77.4 26.7-90.5 64H64C28.7 64 0 92.7 0 128V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H282.5C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 512 512" class="copybutton-icon icon-copied hidden"><path d="M470.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L192 338.7 425.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"></path></svg><span>Copy</span></div></div>
+</section>
+</section>
+
+
