@@ -44,48 +44,48 @@ CREATE OR REPLACE SEMANTIC VIEW SV_BORROWER_LOAN_INTELLIGENCE
     collections(customer_id) REFERENCES customers(customer_id)
   )
   DIMENSIONS (
-    customers.first_name AS borrower_first_name
+    customers.borrower_first_name AS customers.first_name
       WITH SYNONYMS = ('customer first name','applicant first name')
       COMMENT = 'Borrower given name',
-    customers.last_name AS borrower_last_name
+    customers.borrower_last_name AS customers.last_name
       WITH SYNONYMS = ('customer last name','applicant surname')
       COMMENT = 'Borrower family name',
-    customers.state AS borrower_state
+    customers.borrower_state AS customers.state
       WITH SYNONYMS = ('borrower state','customer state')
       COMMENT = 'State of residence',
-    customers.risk_segment AS borrower_risk_segment
+    customers.borrower_risk_segment AS customers.risk_segment
       WITH SYNONYMS = ('risk tier','credit risk segment')
       COMMENT = 'Risk segment based on credit score',
-    customers.onboarding_channel AS onboarding_channel
+    customers.onboarding_channel AS customers.onboarding_channel
       COMMENT = 'Acquisition channel used during onboarding',
-    loan_apps.product_type AS application_product_type
+    loan_apps.application_product_type AS loan_apps.product_type
       WITH SYNONYMS = ('application product type','requested product')
       COMMENT = 'Product requested in the application',
-    loan_apps.status AS application_status
+    loan_apps.application_status AS loan_apps.status
       WITH SYNONYMS = ('app status','decision status')
       COMMENT = 'Application status (APPROVED, DECLINED, etc.)',
-    loans.product_type AS loan_product_type
+    loans.loan_product_type AS loans.product_type
       WITH SYNONYMS = ('loan product','funded product type')
       COMMENT = 'Product type for the funded loan',
-    loans.servicing_status AS servicing_status
+    loans.servicing_status AS loans.servicing_status
       WITH SYNONYMS = ('loan servicing status','portfolio status')
       COMMENT = 'Overall servicing status (CURRENT, DELINQUENT, etc.)',
-    loans.delinquency_bucket AS delinquency_bucket
+    loans.delinquency_bucket AS loans.delinquency_bucket
       WITH SYNONYMS = ('dpd bucket','late bucket')
       COMMENT = 'Delinquency bucket (30/60/90+) if applicable',
-    loans.auto_pay_enabled AS autopay_flag
+    loans.autopay_flag AS loans.auto_pay_enabled
       WITH SYNONYMS = ('auto debit enabled','auto pay flag')
       COMMENT = 'Indicates whether borrower enrolled in auto-pay',
-    payments.payment_method AS payment_method
+    payments.payment_method AS payments.payment_method
       WITH SYNONYMS = ('payment tender','remittance method')
       COMMENT = 'Payment method used (ACH, card, etc.)',
-    payments.payment_channel AS payment_channel
+    payments.payment_channel AS payments.payment_channel
       WITH SYNONYMS = ('payment channel','payment source channel')
       COMMENT = 'Channel the payment came through',
-    collections.event_type AS collection_event_type
+    collections.collection_event_type AS collections.event_type
       WITH SYNONYMS = ('collections contact type','loss-mit contact type')
       COMMENT = 'Type of collection interaction',
-    collections.severity AS collection_severity
+    collections.collection_severity AS collections.severity
       WITH SYNONYMS = ('collections severity','loss-mit priority')
       COMMENT = 'Severity of the collection event'
   )
@@ -153,21 +153,21 @@ CREATE OR REPLACE SEMANTIC VIEW SV_SERVICING_COLLECTIONS_INTELLIGENCE
     incidents(loan_id) REFERENCES loans(loan_id)
   )
   DIMENSIONS (
-    loans.product_type AS product_type
+    loans.product_type AS loans.product_type
       COMMENT = 'Loan product category',
-    loans.servicing_status AS servicing_status
+    loans.servicing_status AS loans.servicing_status
       COMMENT = 'Servicing state (current, delinquent, charged-off)',
-    loans.delinquency_bucket AS delinquency_bucket
+    loans.delinquency_bucket AS loans.delinquency_bucket
       COMMENT = 'DPD bucket for delinquent loans',
-    collections.event_type AS collection_event_type
+    collections.collection_event_type AS collections.event_type
       COMMENT = 'Collection touchpoint type',
-    collections.outcome AS collection_outcome
+    collections.collection_outcome AS collections.outcome
       COMMENT = 'Result of contact (promise, no contact, etc.)',
-    collections.severity AS severity
+    collections.severity AS collections.severity
       COMMENT = 'Priority/impact of collection event',
-    incidents.incident_type AS incident_type
+    incidents.incident_type AS incidents.incident_type
       COMMENT = 'Incident classification (servicing, compliance, etc.)',
-    incidents.status AS incident_status
+    incidents.incident_status AS incidents.status
       COMMENT = 'Incident lifecycle status'
   )
   METRICS (
@@ -218,25 +218,25 @@ CREATE OR REPLACE SEMANTIC VIEW SV_CUSTOMER_SUPPORT_INTELLIGENCE
     incidents(customer_id) REFERENCES customers(customer_id)
   )
   DIMENSIONS (
-    customers.state AS customer_state
+    customers.customer_state AS customers.state
       COMMENT = 'Borrower state',
-    customers.risk_segment AS risk_segment
+    customers.risk_segment AS customers.risk_segment
       COMMENT = 'Borrower risk tier',
-    interactions.interaction_type AS interaction_type
+    interactions.interaction_type AS interactions.interaction_type
       COMMENT = 'Support topic classification',
-    interactions.channel AS interaction_channel
+    interactions.interaction_channel AS interactions.channel
       COMMENT = 'Channel used in interaction',
-    interactions.outcome AS interaction_outcome
+    interactions.interaction_outcome AS interactions.outcome
       COMMENT = 'Result of support touchpoint',
-    interactions.escalation_flag AS escalated
+    interactions.escalated AS interactions.escalation_flag
       COMMENT = 'Indicates whether interaction escalated',
-    transcripts.interaction_channel AS transcript_channel
+    transcripts.transcript_channel AS transcripts.interaction_channel
       COMMENT = 'Channel recorded in transcript',
-    transcripts.issue_category AS issue_category
+    transcripts.issue_category AS transcripts.issue_category
       COMMENT = 'Issue category derived from transcript',
-    transcripts.resolution_status AS resolution_status
+    transcripts.resolution_status AS transcripts.resolution_status
       COMMENT = 'Transcript resolution status',
-    incidents.incident_type AS incident_type
+    incidents.incident_type AS incidents.incident_type
       COMMENT = 'Support-related incident type'
   )
   METRICS (
