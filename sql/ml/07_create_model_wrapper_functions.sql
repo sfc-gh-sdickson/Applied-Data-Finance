@@ -14,7 +14,7 @@ USE WAREHOUSE ADF_SI_WH;
 DROP PROCEDURE IF EXISTS PREDICT_PAYMENT_VOLUME(INT);
 
 CREATE OR REPLACE PROCEDURE PREDICT_PAYMENT_VOLUME(
-    MONTHS_AHEAD INT
+    months_ahead INT
 )
 RETURNS STRING
 LANGUAGE PYTHON
@@ -84,7 +84,7 @@ $$;
 DROP PROCEDURE IF EXISTS PREDICT_BORROWER_RISK(VARCHAR);
 
 CREATE OR REPLACE PROCEDURE PREDICT_BORROWER_RISK(
-    RISK_SEGMENT_FILTER VARCHAR
+    risk_segment VARCHAR
 )
 RETURNS STRING
 LANGUAGE PYTHON
@@ -94,14 +94,14 @@ HANDLER = 'predict_risk'
 COMMENT = 'Invokes BORROWER_RISK_MODEL to assess churn/delinquency risk by segment'
 AS
 $$
-def predict_risk(session, risk_segment_filter):
+def predict_risk(session, risk_segment):
     from snowflake.ml.registry import Registry
     import json
 
     reg = Registry(session)
     model = reg.get_model("BORROWER_RISK_MODEL").default
 
-    segment_clause = f"AND c.risk_segment = '{risk_segment_filter}'" if risk_segment_filter and risk_segment_filter.upper() != 'ALL' else ""
+    segment_clause = f"AND c.risk_segment = '{risk_segment}'" if risk_segment and risk_segment.upper() != 'ALL' else ""
 
     query = f"""
     SELECT
@@ -130,7 +130,7 @@ def predict_risk(session, risk_segment_filter):
     pdf = preds.to_pandas()
 
     return json.dumps({
-        "risk_segment": risk_segment_filter or "ALL",
+        "risk_segment": risk_segment or "ALL",
         "results": pdf.to_dict(orient="records")
     })
 $$;
@@ -141,7 +141,7 @@ $$;
 DROP PROCEDURE IF EXISTS PREDICT_COLLECTION_SUCCESS(VARCHAR);
 
 CREATE OR REPLACE PROCEDURE PREDICT_COLLECTION_SUCCESS(
-    DELINQUENCY_BUCKET_FILTER VARCHAR
+    delinquency_bucket VARCHAR
 )
 RETURNS STRING
 LANGUAGE PYTHON
@@ -151,14 +151,14 @@ HANDLER = 'predict_collections'
 COMMENT = 'Invokes COLLECTION_SUCCESS_MODEL to estimate promise-to-pay success probability'
 AS
 $$
-def predict_collections(session, delinquency_bucket_filter):
+def predict_collections(session, delinquency_bucket):
     from snowflake.ml.registry import Registry
     import json
 
     reg = Registry(session)
     model = reg.get_model("COLLECTION_SUCCESS_MODEL").default
 
-    bucket_clause = f"AND loans.delinquency_bucket = '{delinquency_bucket_filter}'" if delinquency_bucket_filter and delinquency_bucket_filter.upper() != 'ALL' else ""
+    bucket_clause = f"AND loans.delinquency_bucket = '{delinquency_bucket}'" if delinquency_bucket and delinquency_bucket.upper() != 'ALL' else ""
 
     query = f"""
     SELECT
@@ -185,7 +185,7 @@ def predict_collections(session, delinquency_bucket_filter):
     pdf = preds.to_pandas()
 
     return json.dumps({
-        "delinquency_bucket": delinquency_bucket_filter or "ALL",
+        "delinquency_bucket": delinquency_bucket or "ALL",
         "results": pdf.to_dict(orient="records")
     })
 $$;
