@@ -11,10 +11,10 @@ USE WAREHOUSE ADF_SI_WH;
 -- ============================================================================
 -- Procedure 1: Payment Volume Forecast Wrapper
 -- ============================================================================
-DROP FUNCTION IF EXISTS PREDICT_PAYMENT_VOLUME(INT);
+DROP FUNCTION IF EXISTS PREDICT_PAYMENT_VOLUME(VARIANT);
 
 CREATE OR REPLACE PROCEDURE PREDICT_PAYMENT_VOLUME(
-    MONTHS_AHEAD INT
+    INPUT_DATA VARIANT
 )
 RETURNS STRING
 LANGUAGE PYTHON
@@ -24,9 +24,18 @@ HANDLER = 'predict_payments'
 COMMENT = 'Invokes PAYMENT_VOLUME_FORECASTER model to project future payment cash flows'
 AS
 $$
-def predict_payments(session, months_ahead):
+def predict_payments(session, input_data):
     from snowflake.ml.registry import Registry
     import json
+
+    months_ahead = 6
+    if isinstance(input_data, dict):
+        months_ahead = input_data.get("months_ahead", 6)
+    elif input_data is not None:
+        try:
+            months_ahead = int(input_data)
+        except Exception:
+            months_ahead = 6
 
     reg = Registry(session)
     model = reg.get_model("PAYMENT_VOLUME_FORECASTER").default
@@ -55,10 +64,10 @@ $$;
 -- ============================================================================
 -- Procedure 2: Borrower Churn / Default Risk Wrapper
 -- ============================================================================
-DROP FUNCTION IF EXISTS PREDICT_BORROWER_RISK(STRING);
+DROP FUNCTION IF EXISTS PREDICT_BORROWER_RISK(VARIANT);
 
 CREATE OR REPLACE PROCEDURE PREDICT_BORROWER_RISK(
-    RISK_SEGMENT_FILTER STRING
+    INPUT_DATA VARIANT
 )
 RETURNS STRING
 LANGUAGE PYTHON
@@ -68,9 +77,15 @@ HANDLER = 'predict_risk'
 COMMENT = 'Invokes BORROWER_RISK_MODEL to assess churn/delinquency risk by segment'
 AS
 $$
-def predict_risk(session, risk_segment_filter):
+def predict_risk(session, input_data):
     from snowflake.ml.registry import Registry
     import json
+
+    risk_segment_filter = None
+    if isinstance(input_data, dict):
+        risk_segment_filter = input_data.get("risk_segment")
+    elif isinstance(input_data, str):
+        risk_segment_filter = input_data
 
     reg = Registry(session)
     model = reg.get_model("BORROWER_RISK_MODEL").default
@@ -108,10 +123,10 @@ $$;
 -- ============================================================================
 -- Procedure 3: Collections Outcome Prediction Wrapper
 -- ============================================================================
-DROP FUNCTION IF EXISTS PREDICT_COLLECTION_SUCCESS(STRING);
+DROP FUNCTION IF EXISTS PREDICT_COLLECTION_SUCCESS(VARIANT);
 
 CREATE OR REPLACE PROCEDURE PREDICT_COLLECTION_SUCCESS(
-    DELINQUENCY_BUCKET_FILTER STRING
+    INPUT_DATA VARIANT
 )
 RETURNS STRING
 LANGUAGE PYTHON
@@ -121,9 +136,15 @@ HANDLER = 'predict_collections'
 COMMENT = 'Invokes COLLECTION_SUCCESS_MODEL to estimate promise-to-pay success probability'
 AS
 $$
-def predict_collections(session, delinquency_bucket_filter):
+def predict_collections(session, input_data):
     from snowflake.ml.registry import Registry
     import json
+
+    delinquency_bucket_filter = None
+    if isinstance(input_data, dict):
+        delinquency_bucket_filter = input_data.get("delinquency_bucket")
+    elif isinstance(input_data, str):
+        delinquency_bucket_filter = input_data
 
     reg = Registry(session)
     model = reg.get_model("COLLECTION_SUCCESS_MODEL").default
