@@ -200,8 +200,7 @@ SELECT
     'Notes for ' || topic || ' via ' || channel || ' outcome ' || outcome AS notes,
     CASE WHEN outcome IN ('FOLLOW_UP','ESCALATED') THEN DATEADD('day', UNIFORM(2, 10, RANDOM()), CURRENT_DATE()) END AS follow_up_date,
     outcome = 'ESCALATED' AS escalation_flag,
-    CURRENT_TIMESTAMP() AS created_at,
-    CURRENT_TIMESTAMP() AS updated_at
+    CURRENT_TIMESTAMP() AS created_at
 FROM LOAN_ACCOUNTS loan
 JOIN TABLE(GENERATOR(ROWCOUNT => 4)) g
 WHERE UNIFORM(0, 100, RANDOM()) < 70
