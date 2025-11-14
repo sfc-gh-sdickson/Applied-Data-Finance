@@ -51,15 +51,20 @@ def predict_payments(session, input_data):
 
     recent_query = f"""
     SELECT
-        DATE_TRUNC('month', payment_date) AS payment_month,
-        SUM(amount)::FLOAT AS total_payments
+        DATE_TRUNC('month', payment_date)::DATE AS payment_month,
+        MONTH(payment_date) AS month_num,
+        YEAR(payment_date) AS year_num,
+        COUNT(DISTINCT loan_id)::FLOAT AS loan_count,
+        AVG(amount)::FLOAT AS avg_payment_amount,
+        COUNT_IF(late_fee_applied)::FLOAT AS late_payment_count,
+        SUM(amount)::FLOAT AS total_payment_amount
     FROM RAW.PAYMENT_HISTORY
-    WHERE payment_date >= DATEADD('month', -12, CURRENT_DATE())
-    GROUP BY 1
+    WHERE payment_date >= DATEADD('month', -24, CURRENT_DATE())
+    GROUP BY 1,2,3
     ORDER BY payment_month
     """
 
-    input_df = session.sql(recent_query)
+    input_df = session.sql(recent_query).drop("PAYMENT_MONTH")
 
     preds = model.run(input_df, function_name="predict")
     pdf = preds.to_pandas()
