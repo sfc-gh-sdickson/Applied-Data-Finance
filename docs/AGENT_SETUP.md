@@ -1,4 +1,4 @@
-![Snowflake Logo](../Snowflake_Logo.svg)
+<img src="../Snowflake_Logo.svg" alt="Snowflake Logo" width="33%">
 
 # Applied Data Finance Intelligence Agent Setup Guide
 
