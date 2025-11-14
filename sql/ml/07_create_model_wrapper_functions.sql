@@ -28,14 +28,23 @@ def predict_payments(session, input_data):
     from snowflake.ml.registry import Registry
     import json
 
+    payload = {}
     months_ahead = 6
-    if isinstance(input_data, dict):
-        months_ahead = input_data.get("months_ahead", 6)
-    elif input_data is not None:
-        try:
-            months_ahead = int(input_data)
-        except Exception:
-            months_ahead = 6
+
+    if input_data is not None:
+        if isinstance(input_data, dict):
+            payload = input_data
+        else:
+            try:
+                payload = json.loads(str(input_data))
+            except Exception:
+                payload = {}
+
+    months_ahead = payload.get("months_ahead") or payload.get("monthsAhead") or months_ahead
+    try:
+        months_ahead = int(months_ahead)
+    except Exception:
+        months_ahead = 6
 
     reg = Registry(session)
     model = reg.get_model("PAYMENT_VOLUME_FORECASTER").default
@@ -81,10 +90,20 @@ def predict_risk(session, input_data):
     from snowflake.ml.registry import Registry
     import json
 
+    payload = {}
     risk_segment_filter = None
-    if isinstance(input_data, dict):
-        risk_segment_filter = input_data.get("risk_segment")
-    elif isinstance(input_data, str):
+
+    if input_data is not None:
+        if isinstance(input_data, dict):
+            payload = input_data
+        else:
+            try:
+                payload = json.loads(str(input_data))
+            except Exception:
+                payload = {}
+
+    risk_segment_filter = payload.get("risk_segment") or payload.get("riskSegment")
+    if not risk_segment_filter and isinstance(input_data, str):
         risk_segment_filter = input_data
 
     reg = Registry(session)
@@ -140,10 +159,20 @@ def predict_collections(session, input_data):
     from snowflake.ml.registry import Registry
     import json
 
+    payload = {}
     delinquency_bucket_filter = None
-    if isinstance(input_data, dict):
-        delinquency_bucket_filter = input_data.get("delinquency_bucket")
-    elif isinstance(input_data, str):
+
+    if input_data is not None:
+        if isinstance(input_data, dict):
+            payload = input_data
+        else:
+            try:
+                payload = json.loads(str(input_data))
+            except Exception:
+                payload = {}
+
+    delinquency_bucket_filter = payload.get("delinquency_bucket") or payload.get("delinquencyBucket")
+    if not delinquency_bucket_filter and isinstance(input_data, str):
         delinquency_bucket_filter = input_data
 
     reg = Registry(session)
